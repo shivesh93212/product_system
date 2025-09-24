@@ -4,3 +4,4 @@ jinja2
 python-multipart
 sqlalchemy
 asyncpg
+psycopg2-binary>=2.9.0
