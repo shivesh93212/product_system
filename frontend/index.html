@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f0f0f0;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #333;
+      color: #fff;
+    }
+
+    .controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      padding: 8px;
+      margin: 5px;
+      width: 150px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .btn-add { background-color: #28a745; }
+    .btn-update { background-color: #007bff; }
+    .btn-delete { background-color: #dc3545; }
+  </style>
+</head>
+<body onload="fetchProducts()">
+
+  <h1>Product Manager</h1>
+
+  <div class="controls">
+    <input type="text" id="name" placeholder="Product Name">
+    <input type="number" id="price" placeholder="Price">
+    <input type="number" id="count" placeholder="Count">
+    <button class="btn-add" onclick="addProduct()">Add Product</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Count</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="productTable">
+      <!-- Product rows will appear here -->
+    </tbody>
+  </table>
+
+  <script>
+    let products = [];
+    let nextId = 1;
+
+    function addProduct() {
+  const name = document.getElementById('name').value.trim();
+  const price = parseFloat(document.getElementById('price').value);
+  const count = parseInt(document.getElementById('count').value);
+
+  if (!name || isNaN(price) || isNaN(count)) {
+    alert("Please enter valid name, price, and count.");
+    return;
+  }
+
+  const product = { name, price, count };
+
+  fetch('http://localhost:8000/product', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(product)
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Failed to add product.");
+    }
+    return response.json();
+  })
+  .then(data => {
+    alert("✅ Product added successfully!");
+    // Clear input fields
+    document.getElementById('name').value = '';
+    document.getElementById('price').value = '';
+    document.getElementById('count').value = '';
+    fetchProducts(); // refresh the product list
+  })
+  .catch(error => {
+    console.error(error);
+    alert("❌ Something went wrong while adding the product.");
+  });
+}
+
+
+
+    function deleteProduct(id) {
+  fetch(`http://localhost:8000/product?id=${id}`, {
+    method: 'DELETE'
+  })
+  .then(() => {
+    alert("Product deleted.");
+    fetchProducts();
+  });
+}
+
+function updateProduct(id) {
+  const row = document.getElementById(`row-${id}`);
+  const name = row.querySelector('.name').innerText.trim();
+  const price = parseFloat(row.querySelector('.price').innerText.trim());
+  const count = parseInt(row.querySelector('.count').innerText.trim());
+
+  if (!name || isNaN(price) || isNaN(count)) {
+    alert("Invalid data. Please enter valid values.");
+    return;
+  }
+
+  const updatedProduct = { name, price, count };
+
+  fetch(`http://localhost:8000/product?id=${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updatedProduct)
+  })
+  .then(response => response.json())
+  .then(() => {
+    alert("Product updated.");
+    fetchProducts();
+  });
+}
+
+    function renderTable() {
+      const tableBody = document.getElementById('productTable');
+      tableBody.innerHTML = '';
+
+      products.forEach(product => {
+        const row = document.createElement('tr');
+        row.id = `row-${product.id}`;
+        row.innerHTML = `
+          <td>${product.id}</td>
+          <td contenteditable="true" class="name">${product.name}</td>
+          <td contenteditable="true" class="price">${product.price}</td>
+          <td contenteditable="true" class="count">${product.count}</td>
+          <td>
+            <button class="btn-update" onclick="updateProduct(${product.id})">Update</button>
+            <button class="btn-delete" onclick="deleteProduct(${product.id})">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+
+    }
+
+    function fetchProducts() {
+  fetch('http://localhost:8000/products')
+    .then(response => response.json())
+    .then(data => {
+      products = data;
+      nextId = Math.max(...products.map(p => p.id)) + 1;
+      renderTable();
+    });
+}
+
+  </script>
+   
+
+</body>
+</html>
